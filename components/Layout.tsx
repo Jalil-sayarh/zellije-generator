@@ -1,13 +1,43 @@
 'use client';
 
-import React, { useRef, useCallback } from 'react';
-import { Shuffle, Sparkles, Palette, Download, Image, FileCode } from 'lucide-react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
+import { Shuffle, Sparkles, Palette, Download, Image, FileCode, Copy, Check } from 'lucide-react';
 import Canvas from './Canvas';
 import { useZellijeStore, PALETTES } from '@/lib/hooks/useZellijeStore';
 
 export function Layout() {
-  const { palette, shimmer, setPalette, setShimmer, regenerate } = useZellijeStore();
+  const { palette, shimmer, seed, setPalette, setShimmer, setSeed, regenerate } = useZellijeStore();
   const canvasRef = useRef<{ getSvgElement: () => SVGSVGElement | null }>(null);
+  const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [seedInput, setSeedInput] = useState('');
+
+  // Mark as mounted to avoid hydration mismatch with seed
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Sync seed input with store seed
+  useEffect(() => {
+    setSeedInput(seed.toString());
+  }, [seed]);
+
+  // Keyboard shortcut: Space to regenerate
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        regenerate();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [regenerate]);
 
   const exportSVG = useCallback(() => {
     const svg = canvasRef.current?.getSvgElement();
@@ -20,12 +50,12 @@ export function Layout() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `zellij-${Date.now()}.svg`;
+    a.download = `zellij-${seed}.svg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, []);
+  }, [seed]);
 
   const exportPNG = useCallback(() => {
     const svg = canvasRef.current?.getSvgElement();
@@ -53,7 +83,7 @@ export function Layout() {
         const pngUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = pngUrl;
-        a.download = `zellij-${Date.now()}.png`;
+        a.download = `zellij-${seed}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -63,6 +93,22 @@ export function Layout() {
       URL.revokeObjectURL(url);
     };
     img.src = url;
+  }, [seed]);
+
+  const copySVGToClipboard = useCallback(async () => {
+    const svg = canvasRef.current?.getSvgElement();
+    if (!svg) return;
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    
+    try {
+      await navigator.clipboard.writeText(svgString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy SVG:', err);
+    }
   }, []);
 
   return (
@@ -87,6 +133,35 @@ export function Layout() {
             <Shuffle size={18} />
             Generate New Pattern
           </button>
+
+          {/* Seed Input */}
+          {mounted && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-zinc-500 whitespace-nowrap">Seed:</label>
+              <input
+                type="text"
+                value={seedInput}
+                onChange={(e) => setSeedInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const parsed = parseInt(seedInput, 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                      setSeed(parsed);
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseInt(seedInput, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    setSeed(parsed);
+                  } else {
+                    setSeedInput(seed.toString());
+                  }
+                }}
+                className="flex-1 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 font-mono focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          )}
 
           {/* Color Palette */}
           <div>
@@ -162,20 +237,27 @@ export function Layout() {
               <Download size={16} />
               Export
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={exportSVG}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+                className="flex items-center justify-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
               >
-                <FileCode size={16} />
+                <FileCode size={14} />
                 SVG
               </button>
               <button
                 onClick={exportPNG}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+                className="flex items-center justify-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
               >
-                <Image size={16} />
+                <Image size={14} />
                 PNG
+              </button>
+              <button
+                onClick={copySVGToClipboard}
+                className="flex items-center justify-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+              >
+                {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
@@ -184,7 +266,7 @@ export function Layout() {
         {/* Footer */}
         <div className="p-4 border-t border-zinc-800 text-center">
           <p className="text-xs text-zinc-500">
-            Press Space or click Generate for new pattern
+            Press <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">Space</kbd> to generate new pattern
           </p>
         </div>
       </aside>

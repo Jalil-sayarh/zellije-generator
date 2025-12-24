@@ -49,6 +49,7 @@ interface ZellijeState {
   
   setPalette: (palette: Palette) => void;
   setShimmer: (shimmer: number) => void;
+  setSeed: (seed: number) => void;
   regenerate: () => void;
 }
 
@@ -59,5 +60,6 @@ export const useZellijeStore = create<ZellijeState>((set) => ({
   
   setPalette: (palette) => set({ palette }),
   setShimmer: (shimmer) => set({ shimmer }),
+  setSeed: (seed) => set({ seed }),
   regenerate: () => set({ seed: Date.now() }),
 }));
