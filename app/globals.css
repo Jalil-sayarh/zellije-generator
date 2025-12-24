@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-cobalt: #0047AB;
+  --color-manganese: #4B0082;
+  --color-ochre: #E3A857;
+  --color-emerald: #006B3C;
+  --color-ivory: #FFFFF0;
+  --color-terracotta: #CC4E3B;
+  --color-turquoise: #30D5C8;
+  --color-midnight: #191970;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply font-body;
+  background: #0f0e0d;
+  color: #e8e4dc;
+  overflow: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Slider styling */
+.slider-track {
+  @apply relative h-1 w-full rounded-full;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 100%);
+}
+
+.slider-range {
+  @apply absolute h-full rounded-full;
+  background: linear-gradient(90deg, var(--color-cobalt) 0%, var(--color-turquoise) 100%);
+}
+
+.slider-thumb {
+  @apply block h-4 w-4 rounded-full border-2 border-white/20 shadow-lg;
+  background: linear-gradient(135deg, #fff 0%, #d4cec2 100%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slider-thumb:hover {
+  @apply scale-110;
+  box-shadow: 0 0 12px rgba(0, 71, 171, 0.4);
+}
+
+.slider-thumb:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 71, 171, 0.3);
+}
+
+/* Canvas container */
+.canvas-container {
+  @apply relative w-full h-full;
+  background: 
+    radial-gradient(ellipse at 30% 30%, rgba(0, 71, 171, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(0, 107, 60, 0.02) 0%, transparent 50%),
+    linear-gradient(180deg, #0f0e0d 0%, #1a1815 50%, #0f0e0d 100%);
+}
+
+/* Tile shimmer effect */
+@keyframes tileShimmer {
+  0% { opacity: 0.95; }
+  50% { opacity: 1; }
+  100% { opacity: 0.95; }
+}
+
+.tile-shimmer {
+  animation: tileShimmer 4s ease-in-out infinite;
+}
+
+/* Control panel glass effect */
+.glass-panel {
+  @apply backdrop-blur-xl rounded-2xl border;
+  background: linear-gradient(135deg, rgba(26, 24, 21, 0.9) 0%, rgba(45, 40, 32, 0.85) 100%);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  background: linear-gradient(135deg, var(--color-cobalt) 0%, #0055cc 100%);
+  color: white;
+  box-shadow: 0 4px 12px -2px rgba(0, 71, 171, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -2px rgba(0, 71, 171, 0.5);
+}
+
+.btn-secondary {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e4dc;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Color swatch */
+.color-swatch {
+  @apply w-8 h-8 rounded-lg cursor-pointer transition-all duration-200 border-2 border-transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-swatch.active {
+  @apply border-white;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Tooltip */
+.tooltip {
+  @apply absolute z-50 px-2 py-1 text-xs rounded-md;
+  background: rgba(0, 0, 0, 0.9);
+  color: #e8e4dc;
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* SVG tile styling */
+svg .tile-path {
+  transition: filter 0.3s ease;
+}
+
+svg .tile-path:hover {
+  filter: brightness(1.1);
+}
+
+/* Export button pulse */
+.export-ready {
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+@keyframes pulseSoft {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 71, 171, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 71, 171, 0); }
+}
+
