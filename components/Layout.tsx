@@ -11,6 +11,7 @@ export function Layout() {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [seedInput, setSeedInput] = useState('');
+  const [isEditingSeed, setIsEditingSeed] = useState(false);
 
   // Mark as mounted to avoid hydration mismatch with seed
   useEffect(() => {
@@ -136,30 +137,42 @@ export function Layout() {
 
           {/* Seed Input */}
           {mounted && (
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-zinc-500 whitespace-nowrap">Seed:</label>
-              <input
-                type="text"
-                value={seedInput}
-                onChange={(e) => setSeedInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+            <div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-zinc-500 whitespace-nowrap">Seed:</label>
+                <input
+                  type="text"
+                  value={seedInput}
+                  onChange={(e) => {
+                    setSeedInput(e.target.value);
+                    setIsEditingSeed(e.target.value !== seed.toString());
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const parsed = parseInt(seedInput, 10);
+                      if (!isNaN(parsed) && parsed > 0) {
+                        setSeed(parsed);
+                        setIsEditingSeed(false);
+                      }
+                    }
+                  }}
+                  onBlur={() => {
                     const parsed = parseInt(seedInput, 10);
                     if (!isNaN(parsed) && parsed > 0) {
                       setSeed(parsed);
+                    } else {
+                      setSeedInput(seed.toString());
                     }
-                  }
-                }}
-                onBlur={() => {
-                  const parsed = parseInt(seedInput, 10);
-                  if (!isNaN(parsed) && parsed > 0) {
-                    setSeed(parsed);
-                  } else {
-                    setSeedInput(seed.toString());
-                  }
-                }}
-                className="flex-1 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 font-mono focus:outline-none focus:border-blue-500"
-              />
+                    setIsEditingSeed(false);
+                  }}
+                  className="flex-1 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 font-mono focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              {isEditingSeed && (
+                <p className="text-xs text-blue-400 mt-1">
+                  Press <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-300">Enter</kbd> to generate
+                </p>
+              )}
             </div>
           )}
 
