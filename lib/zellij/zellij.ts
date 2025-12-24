@@ -562,12 +562,23 @@ function hexToHsb(hex: string): { h: number; s: number; b: number } {
   return { h, s, b: v };
 }
 
-function applyShimmer(hex: string, shimmerAmount: number): string {
-  if (shimmerAmount < 0) return hex;
+function applyShimmer(hex: string, shimmerLevel: number): string {
+  if (shimmerLevel < 0) return hex;
+  
+  // Scale shimmer intensity based on level (2, 3, 4)
+  // Level 2: subtle (±15%), Level 3: medium (±25%), Level 4: strong (±35%)
+  const intensity = shimmerLevel * 0.15;  // 0.30, 0.45, 0.60
   
   const hsb = hexToHsb(hex);
-  const newB = Math.max(0, Math.min(1, hsb.b + (myrand() - 0.5) * 0.2));
-  const [r, g, b] = hsbToRgb(hsb.h, hsb.s, newB);
+  // Apply brightness variation scaled by intensity
+  const variation = (myrand() - 0.5) * intensity;
+  const newB = Math.max(0, Math.min(1, hsb.b + variation));
+  
+  // Also add saturation variation for more natural look
+  const satVariation = (myrand() - 0.5) * (intensity * 0.5);
+  const newS = Math.max(0, Math.min(1, hsb.s + satVariation));
+  
+  const [r, g, b] = hsbToRgb(hsb.h, newS, newB);
   return rgbToHex(r, g, b);
 }
 

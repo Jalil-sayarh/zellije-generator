@@ -1,15 +1,25 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { useZellijeStore } from '@/lib/hooks/useZellijeStore';
 import { generateZellij, RenderedShape } from '@/lib/zellij/zellij';
 
-export default function Canvas() {
+export interface CanvasHandle {
+  getSvgElement: () => SVGSVGElement | null;
+}
+
+const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [mounted, setMounted] = useState(false);
 
   const { palette, shimmer, seed } = useZellijeStore();
+
+  // Expose getSvgElement to parent
+  useImperativeHandle(ref, () => ({
+    getSvgElement: () => svgRef.current,
+  }));
 
   // Mark as mounted on client
   useEffect(() => {
@@ -72,10 +82,12 @@ export default function Canvas() {
       style={{ background: bgColor }}
     >
       <svg
+        ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
         style={{ display: 'block' }}
+        xmlns="http://www.w3.org/2000/svg"
       >
         <rect x="0" y="0" width={dimensions.width} height={dimensions.height} fill={bgColor} />
         {shapes.map((shape, index) => (
@@ -89,4 +101,6 @@ export default function Canvas() {
       </svg>
     </div>
   );
-}
+});
+
+export default Canvas;

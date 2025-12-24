@@ -1,12 +1,69 @@
 'use client';
 
-import React from 'react';
-import { Shuffle, Sparkles, Palette } from 'lucide-react';
+import React, { useRef, useCallback } from 'react';
+import { Shuffle, Sparkles, Palette, Download, Image, FileCode } from 'lucide-react';
 import Canvas from './Canvas';
 import { useZellijeStore, PALETTES } from '@/lib/hooks/useZellijeStore';
 
 export function Layout() {
   const { palette, shimmer, setPalette, setShimmer, regenerate } = useZellijeStore();
+  const canvasRef = useRef<{ getSvgElement: () => SVGSVGElement | null }>(null);
+
+  const exportSVG = useCallback(() => {
+    const svg = canvasRef.current?.getSvgElement();
+    if (!svg) return;
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `zellij-${Date.now()}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const exportPNG = useCallback(() => {
+    const svg = canvasRef.current?.getSvgElement();
+    if (!svg) return;
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = svg.clientWidth * 2;  // 2x for high DPI
+      canvas.height = svg.clientHeight * 2;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      ctx.scale(2, 2);
+      ctx.drawImage(img, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const pngUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = `zellij-${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(pngUrl);
+      }, 'image/png');
+      
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  }, []);
 
   return (
     <div className="flex h-screen bg-zinc-950">
@@ -95,8 +152,32 @@ export function Layout() {
               ))}
             </div>
             <p className="text-xs text-zinc-500 mt-2">
-              Adds subtle color variation like kiln-fired tiles
+              Adds color variation like kiln-fired tiles
             </p>
+          </div>
+
+          {/* Export */}
+          <div>
+            <div className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-4">
+              <Download size={16} />
+              Export
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={exportSVG}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+              >
+                <FileCode size={16} />
+                SVG
+              </button>
+              <button
+                onClick={exportPNG}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+              >
+                <Image size={16} />
+                PNG
+              </button>
+            </div>
           </div>
         </div>
 
@@ -110,7 +191,7 @@ export function Layout() {
 
       {/* Main Canvas */}
       <main className="flex-1 overflow-hidden">
-        <Canvas />
+        <Canvas ref={canvasRef} />
       </main>
     </div>
   );
