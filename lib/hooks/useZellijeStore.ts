@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { ZELLIJ_PRESETS, ZellijPreset } from '../zellij/zellijCustom';
+import { ZELLIJ_PRESETS, ZellijPreset, FillerStrategy } from '../zellij/zellijCustom';
 
 export interface Palette {
   name: string;
@@ -57,6 +57,34 @@ export type FocusType = 'None' | 'Eight' | 'Sixteen';
 // Color role labels for UI
 export const COLOR_ROLES = ['Background', 'Accent', 'Fill 1', 'Fill 2', 'Fill 3'] as const;
 
+// Filler strategy options for UI
+export const FILLER_STRATEGIES: { value: FillerStrategy; label: string; description: string }[] = [
+  { value: 'random', label: 'Random', description: 'Organic variety' },
+  { value: 'first', label: 'First', description: 'Consistent look' },
+  { value: 'complex', label: 'Complex', description: 'Maximum detail' },
+  { value: 'simple', label: 'Simple', description: 'Minimalist' },
+];
+
+// Shadow presets for quick styling
+export interface ShadowPreset {
+  name: string;
+  offsetX: number;
+  offsetY: number;
+  blur: number;
+  opacity: number;
+  color: string;
+  useAccentColor?: boolean;  // If true, use palette accent color instead of fixed color
+}
+
+export const SHADOW_PRESETS: ShadowPreset[] = [
+  { name: 'Subtle', offsetX: 1, offsetY: 1, blur: 2, opacity: 0.15, color: '#000000' },
+  { name: 'Soft', offsetX: 2, offsetY: 2, blur: 4, opacity: 0.25, color: '#000000' },
+  { name: 'Sharp', offsetX: 2, offsetY: 2, blur: 0, opacity: 0.4, color: '#000000' },
+  { name: 'Dramatic', offsetX: 4, offsetY: 4, blur: 8, opacity: 0.35, color: '#000000' },
+  { name: 'Inset', offsetX: -2, offsetY: -2, blur: 3, opacity: 0.25, color: '#000000' },
+  { name: 'Glow', offsetX: 0, offsetY: 0, blur: 6, opacity: 0.4, color: '#3b82f6', useAccentColor: true },
+];
+
 interface ZellijeState {
   // Common settings
   palette: Palette;
@@ -78,6 +106,18 @@ interface ZellijeState {
   outlineColor: string;
   outlineWidth: number;
   padding: number;        // 20-100
+  
+  // New advanced options
+  fillerStrategy: FillerStrategy;
+  
+  // Shadow effects
+  showShadow: boolean;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+  shadowBlur: number;
+  shadowOpacity: number;
+  shadowColor: string;
+  activeShadowPreset: string | null;  // null means custom settings
   
   // Actions - Common
   setPalette: (palette: Palette) => void;
@@ -102,6 +142,18 @@ interface ZellijeState {
   setOutlineWidth: (width: number) => void;
   setPadding: (padding: number) => void;
   applyPreset: (preset: ZellijPreset) => void;
+  
+  // Actions - Advanced options
+  setFillerStrategy: (strategy: FillerStrategy) => void;
+  
+  // Actions - Shadow effects
+  setShowShadow: (show: boolean) => void;
+  setShadowOffsetX: (offset: number) => void;
+  setShadowOffsetY: (offset: number) => void;
+  setShadowBlur: (blur: number) => void;
+  setShadowOpacity: (opacity: number) => void;
+  setShadowColor: (color: string) => void;
+  applyShadowPreset: (preset: ShadowPreset) => void;
 }
 
 export const useZellijeStore = create<ZellijeState>((set, get) => ({
@@ -125,6 +177,18 @@ export const useZellijeStore = create<ZellijeState>((set, get) => ({
   outlineColor: '#000000',
   outlineWidth: 1,
   padding: 60,
+  
+  // Advanced options defaults
+  fillerStrategy: 'random',
+  
+  // Shadow effects defaults (Soft preset)
+  showShadow: false,
+  shadowOffsetX: 2,
+  shadowOffsetY: 2,
+  shadowBlur: 4,
+  shadowOpacity: 0.25,
+  shadowColor: '#000000',
+  activeShadowPreset: 'Soft',
   
   // Actions - Common
   setPalette: (palette) => set({ palette }),
@@ -165,8 +229,43 @@ export const useZellijeStore = create<ZellijeState>((set, get) => ({
     lineCount: preset.lineCount,
     focus: preset.focus
   }),
+  
+  // Actions - Advanced options
+  setFillerStrategy: (fillerStrategy) => set({ fillerStrategy }),
+  
+  // Actions - Shadow effects
+  setShowShadow: (showShadow) => set({ showShadow }),
+  setShadowOffsetX: (shadowOffsetX) => set({ 
+    shadowOffsetX: Math.max(-10, Math.min(10, shadowOffsetX)),
+    activeShadowPreset: null  // Mark as custom when manually adjusted
+  }),
+  setShadowOffsetY: (shadowOffsetY) => set({ 
+    shadowOffsetY: Math.max(-10, Math.min(10, shadowOffsetY)),
+    activeShadowPreset: null
+  }),
+  setShadowBlur: (shadowBlur) => set({ 
+    shadowBlur: Math.max(0, Math.min(15, shadowBlur)),
+    activeShadowPreset: null
+  }),
+  setShadowOpacity: (shadowOpacity) => set({ 
+    shadowOpacity: Math.max(0, Math.min(1, shadowOpacity)),
+    activeShadowPreset: null
+  }),
+  setShadowColor: (shadowColor) => set({ 
+    shadowColor,
+    activeShadowPreset: null
+  }),
+  applyShadowPreset: (preset) => set((state) => ({
+    shadowOffsetX: preset.offsetX,
+    shadowOffsetY: preset.offsetY,
+    shadowBlur: preset.blur,
+    shadowOpacity: preset.opacity,
+    shadowColor: preset.useAccentColor ? state.palette.colors[1] : preset.color,
+    activeShadowPreset: preset.name,
+    showShadow: true,  // Automatically enable shadow when applying preset
+  })),
 }));
 
-// Re-export presets for use in UI
+// Re-export presets and types for use in UI
 export { ZELLIJ_PRESETS } from '../zellij/zellijCustom';
-export type { ZellijPreset } from '../zellij/zellijCustom';
+export type { ZellijPreset, FillerStrategy } from '../zellij/zellijCustom';

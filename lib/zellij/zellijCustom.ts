@@ -35,6 +35,9 @@ interface GridCell {
   group: number;
 }
 
+// Filler strategy types
+export type FillerStrategy = 'random' | 'first' | 'complex' | 'simple';
+
 // Custom generator options - all explicit, no randomization of structure
 export interface CustomRenderOptions {
   seed: number;           // Still used for filler selection and shimmer
@@ -53,6 +56,9 @@ export interface CustomRenderOptions {
   outlineColor: string;   // Outline stroke color
   outlineWidth: number;   // Outline stroke width
   padding: number;        // Canvas padding (20-100)
+  
+  // New advanced options
+  fillerStrategy: FillerStrategy;  // How to select filler patterns
 }
 
 // Module state
@@ -61,6 +67,7 @@ let LINE_DENSITY: number;
 let NUM_LINES: number;
 let FOCUS: 'None' | 'Eight' | 'Sixteen';
 let SHIMMER: number;
+let FILLER_STRATEGY: FillerStrategy;
 
 let lines: Line[];
 let grid: GridCell[];
@@ -188,7 +195,6 @@ function createLines(num: number): { lines: Line[]; groups: Point[][] } {
 
   // 16-pointed star focus - uses deterministic center position
   function makeStar(n: number): void {
-    // Use center of grid for deterministic placement
     const ax = Math.floor(n / 2);
     const ay = Math.floor(n / 2);
 
@@ -304,7 +310,6 @@ function createLines(num: number): { lines: Line[]; groups: Point[][] } {
   num -= keep_lines.length;
 
   // Deterministic line selection based on seed
-  // Use even distribution instead of random selection
   const step = Math.max(1, Math.floor(all_lines.length / Math.max(1, num)));
   let idx = 0;
   while (all_lines.length > 0 && num > 0) {
@@ -554,6 +559,25 @@ function applyShimmer(hex: string, shimmerLevel: number): string {
   return rgbToHex(r, g, b);
 }
 
+// Filler selection based on strategy
+function selectFiller(clusters: Array<{ bounds: number[]; shapes: Array<{ colour: number; path: number[] }> }>): { bounds: number[]; shapes: Array<{ colour: number; path: number[] }> } {
+  switch (FILLER_STRATEGY) {
+    case 'first':
+      // Always use the first filler (consistent look)
+      return clusters[0];
+    case 'complex':
+      // Use filler with most shapes (most detailed)
+      return clusters.reduce((a, b) => a.shapes.length >= b.shapes.length ? a : b);
+    case 'simple':
+      // Use filler with fewest shapes (minimalist)
+      return clusters.reduce((a, b) => a.shapes.length <= b.shapes.length ? a : b);
+    case 'random':
+    default:
+      // Random selection (original behavior)
+      return clusters[Math.floor(myrand() * clusters.length)];
+  }
+}
+
 // Rendered shape with optional stroke
 export interface CustomRenderedShape {
   path: Point[];
@@ -576,7 +600,8 @@ export function generateCustomZellij(options: CustomRenderOptions): CustomRender
     showOutlines,
     outlineColor,
     outlineWidth,
-    padding
+    padding,
+    fillerStrategy
   } = options;
 
   // Initialize random seed (used only for filler selection and shimmer)
@@ -587,6 +612,7 @@ export function generateCustomZellij(options: CustomRenderOptions): CustomRender
   NUM_LINES = Math.max(5, Math.min(50, lineCount));
   FOCUS = focus;
   SHIMMER = shimmer;
+  FILLER_STRATEGY = fillerStrategy;
   GRID_SIDE = (2 * LINE_DENSITY) + 1;
 
   // Build the design
@@ -651,7 +677,9 @@ function drawTileCustom(
   }
 
   const clusters = fillers[sig];
-  const cl = clusters[Math.floor(myrand() * clusters.length)];
+  
+  // Use filler strategy to select cluster
+  const cl = selectFiller(clusters);
   const bds = cl.bounds;
   const fv = makePoint(bds[0], bds[1]);
   const fw = makePoint(bds[2], bds[3]);
@@ -662,16 +690,19 @@ function drawTileCustom(
     const pth = sh.path;
     const colIdx = sh.colour;
 
-    let color = palette[Math.min(colIdx, palette.length - 1)];
-    
-    if (SHIMMER >= 0 && colIdx >= 2) {
-      color = applyShimmer(color, SHIMMER);
-    }
-
+    // Transform the shape path
     const dshp: Point[] = [];
     for (let idx = 0; idx < pth.length; idx += 2) {
       const spt = mul(T, makePoint(pth[idx], pth[idx + 1]));
       dshp.push(spt);
+    }
+
+    // Use original color index from filler data
+    let color = palette[Math.min(colIdx, palette.length - 1)];
+    
+    // Apply shimmer only to fill colors (index >= 2)
+    if (SHIMMER >= 0 && colIdx >= 2) {
+      color = applyShimmer(color, SHIMMER);
     }
 
     const shape: CustomRenderedShape = { path: dshp, color };
@@ -701,4 +732,3 @@ export const ZELLIJ_PRESETS: ZellijPreset[] = [
   { name: '8-Star', lineDensity: 10, lineCount: 25, focus: 'Eight' },
   { name: '16-Star', lineDensity: 12, lineCount: 30, focus: 'Sixteen' },
 ];
-

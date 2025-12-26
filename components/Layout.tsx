@@ -1,17 +1,21 @@
 'use client';
 
 import React, { useRef, useCallback, useEffect, useState } from 'react';
-import { Shuffle, Sparkles, Palette, Download, Image, FileCode, Copy, Check, Sliders, Grid, Target, Hexagon, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shuffle, Sparkles, Palette, Download, Image, FileCode, Copy, Check, Sliders, Grid, Target, Hexagon, Plus, ChevronDown, ChevronUp, Layers, Sun } from 'lucide-react';
 import Canvas from './Canvas';
-import { useZellijeStore, PALETTES, ZELLIJ_PRESETS, COLOR_ROLES, type FocusType } from '@/lib/hooks/useZellijeStore';
+import { useZellijeStore, PALETTES, ZELLIJ_PRESETS, COLOR_ROLES, FILLER_STRATEGIES, SHADOW_PRESETS, type FocusType } from '@/lib/hooks/useZellijeStore';
 
 export function Layout() {
   const { 
     palette, shimmer, seed, mode,
     lineDensity, lineCount, focus, showOutlines, outlineColor, outlineWidth, padding,
+    fillerStrategy,
+    showShadow, shadowOffsetX, shadowOffsetY, shadowBlur, shadowOpacity, shadowColor, activeShadowPreset,
     customPalette, isEditingCustomPalette,
     setPalette, setShimmer, setSeed, regenerate, setMode,
     setLineDensity, setLineCount, setFocus, setShowOutlines, setOutlineColor, setOutlineWidth, setPadding, applyPreset,
+    setFillerStrategy,
+    setShowShadow, setShadowOffsetX, setShadowOffsetY, setShadowBlur, setShadowOpacity, setShadowColor, applyShadowPreset,
     setCustomPaletteColor, useCustomPalette, setIsEditingCustomPalette
   } = useZellijeStore();
   
@@ -302,6 +306,33 @@ export function Layout() {
                 </div>
               </div>
 
+              {/* Filler Strategy */}
+              <div>
+                <div className="flex items-center gap-2 text-xs text-zinc-400 mb-2">
+                  <Layers size={12} />
+                  Filler Strategy
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {FILLER_STRATEGIES.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => setFillerStrategy(s.value)}
+                      className={`px-2 py-1.5 rounded text-xs transition-colors ${
+                        fillerStrategy === s.value
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
+                      }`}
+                      title={s.description}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-zinc-600 mt-1">
+                  {FILLER_STRATEGIES.find(s => s.value === fillerStrategy)?.description}
+                </p>
+              </div>
+
               {/* Padding */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -362,6 +393,136 @@ export function Layout() {
                       onChange={(e) => setOutlineWidth(parseFloat(e.target.value))}
                       className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Shadow Effects */}
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-zinc-400 flex items-center gap-1.5">
+                  <Sun size={12} />
+                  Shadow Effects
+                </label>
+                <button
+                  onClick={() => setShowShadow(!showShadow)}
+                  className={`w-10 h-5 rounded-full transition-colors ${
+                    showShadow ? 'bg-blue-600' : 'bg-zinc-700'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    showShadow ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Shadow Settings (show when shadow enabled) */}
+              {showShadow && (
+                <div className="pl-4 space-y-3 border-l-2 border-zinc-800">
+                  {/* Shadow Presets */}
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-2 block">Presets</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {SHADOW_PRESETS.map((preset) => (
+                        <button
+                          key={preset.name}
+                          onClick={() => applyShadowPreset(preset)}
+                          className={`px-2 py-1 rounded text-xs transition-colors ${
+                            activeShadowPreset === preset.name
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700'
+                          }`}
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                    </div>
+                    {activeShadowPreset === null && (
+                      <p className="text-xs text-zinc-600 mt-1.5 italic">Custom settings</p>
+                    )}
+                  </div>
+
+                  {/* Manual Adjustments */}
+                  <div className="pt-2 border-t border-zinc-800/50">
+                    <label className="text-xs text-zinc-500 mb-2 block">Manual Adjustments</label>
+                    
+                    {/* Shadow Color */}
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-xs text-zinc-400">Color</label>
+                      <input
+                        type="color"
+                        value={shadowColor}
+                        onChange={(e) => setShadowColor(e.target.value)}
+                        className="w-8 h-6 rounded cursor-pointer bg-transparent"
+                      />
+                    </div>
+
+                    {/* Shadow Offset X */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-zinc-400">Offset X</label>
+                        <span className="text-xs text-zinc-500 font-mono">{shadowOffsetX}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-10"
+                        max="10"
+                        step="1"
+                        value={shadowOffsetX}
+                        onChange={(e) => setShadowOffsetX(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+
+                    {/* Shadow Offset Y */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-zinc-400">Offset Y</label>
+                        <span className="text-xs text-zinc-500 font-mono">{shadowOffsetY}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-10"
+                        max="10"
+                        step="1"
+                        value={shadowOffsetY}
+                        onChange={(e) => setShadowOffsetY(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+
+                    {/* Shadow Blur */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-zinc-400">Blur</label>
+                        <span className="text-xs text-zinc-500 font-mono">{shadowBlur}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="15"
+                        step="1"
+                        value={shadowBlur}
+                        onChange={(e) => setShadowBlur(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+
+                    {/* Shadow Opacity */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-zinc-400">Opacity</label>
+                        <span className="text-xs text-zinc-500 font-mono">{Math.round(shadowOpacity * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={shadowOpacity}
+                        onChange={(e) => setShadowOpacity(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
               )}

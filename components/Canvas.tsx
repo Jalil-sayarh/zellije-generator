@@ -30,7 +30,16 @@ const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
     showOutlines,
     outlineColor,
     outlineWidth,
-    padding
+    padding,
+    // Advanced options
+    fillerStrategy,
+    // Shadow effects
+    showShadow,
+    shadowOffsetX,
+    shadowOffsetY,
+    shadowBlur,
+    shadowOpacity,
+    shadowColor,
   } = useZellijeStore();
 
   // Expose getSvgElement to parent
@@ -80,7 +89,8 @@ const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
           showOutlines,
           outlineColor,
           outlineWidth,
-          padding
+          padding,
+          fillerStrategy,
         });
       } else {
         // Use random generator (original behavior)
@@ -110,7 +120,8 @@ const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
     showOutlines,
     outlineColor,
     outlineWidth,
-    padding
+    padding,
+    fillerStrategy,
   ]);
 
   // Convert path to SVG path string
@@ -125,6 +136,12 @@ const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
   };
 
   const bgColor = palette.colors[0];
+  
+  // Shadow filter ID
+  const shadowFilterId = 'dropShadow';
+  
+  // Determine if shadow should be applied (only in custom mode with shadow enabled)
+  const applyShadow = mode === 'custom' && showShadow;
 
   return (
     <div
@@ -140,6 +157,25 @@ const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
         style={{ display: 'block' }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* SVG Filter Definitions */}
+        <defs>
+          <filter 
+            id={shadowFilterId} 
+            x="-50%" 
+            y="-50%" 
+            width="200%" 
+            height="200%"
+          >
+            <feDropShadow 
+              dx={shadowOffsetX} 
+              dy={shadowOffsetY} 
+              stdDeviation={shadowBlur} 
+              floodOpacity={shadowOpacity}
+              floodColor={shadowColor}
+            />
+          </filter>
+        </defs>
+        
         <rect x="0" y="0" width={dimensions.width} height={dimensions.height} fill={bgColor} />
         {shapes.map((shape, index) => {
           // Check if shape has stroke properties (custom mode with outlines)
@@ -151,6 +187,7 @@ const Canvas = forwardRef<CanvasHandle>(function Canvas(_, ref) {
               fill={shape.color}
               stroke={customShape.stroke || 'none'}
               strokeWidth={customShape.strokeWidth || 0}
+              filter={applyShadow ? `url(#${shadowFilterId})` : undefined}
             />
           );
         })}
