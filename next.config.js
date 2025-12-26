@@ -5,8 +5,8 @@ const nextConfig = {
   
   // If deploying to a subdirectory like yoursite.com/zellij-generator/
   // Adjust this path to match your actual subdirectory
-  basePath: '/zellij-generator',
-  assetPrefix: '/zellij-generator/',
+  basePath: '/zellije-generator',
+  assetPrefix: '/zellije-generator/',
   
   // Skip ESLint during build (can still run separately with npm run lint)
   eslint: {
