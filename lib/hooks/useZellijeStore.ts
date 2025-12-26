@@ -1,10 +1,12 @@
 'use client';
 
 import { create } from 'zustand';
+import { ZELLIJ_PRESETS, ZellijPreset } from '../zellij/zellijCustom';
 
 export interface Palette {
   name: string;
   colors: string[];  // [background, accent, fill1, fill2, fill3]
+  isCustom?: boolean;
 }
 
 export const PALETTES: Palette[] = [
@@ -42,24 +44,129 @@ export const PALETTES: Palette[] = [
   }
 ];
 
+// Default custom palette (user can modify)
+const DEFAULT_CUSTOM_PALETTE: Palette = {
+  name: 'Custom',
+  colors: ['#1a1a2e', '#f0f0f0', '#3b82f6', '#60a5fa', '#93c5fd'],
+  isCustom: true
+};
+
+export type GeneratorMode = 'random' | 'custom';
+export type FocusType = 'None' | 'Eight' | 'Sixteen';
+
+// Color role labels for UI
+export const COLOR_ROLES = ['Background', 'Accent', 'Fill 1', 'Fill 2', 'Fill 3'] as const;
+
 interface ZellijeState {
+  // Common settings
   palette: Palette;
   shimmer: number;  // -1 = off, 2-4 = shimmer amount
   seed: number;
   
+  // Custom palette
+  customPalette: Palette;
+  isEditingCustomPalette: boolean;
+  
+  // Generator mode
+  mode: GeneratorMode;
+  
+  // Custom mode settings
+  lineDensity: number;    // 4-25
+  lineCount: number;      // 5-50
+  focus: FocusType;       // None, Eight, Sixteen
+  showOutlines: boolean;
+  outlineColor: string;
+  outlineWidth: number;
+  padding: number;        // 20-100
+  
+  // Actions - Common
   setPalette: (palette: Palette) => void;
   setShimmer: (shimmer: number) => void;
   setSeed: (seed: number) => void;
   regenerate: () => void;
+  
+  // Actions - Custom Palette
+  setCustomPaletteColor: (index: number, color: string) => void;
+  useCustomPalette: () => void;
+  setIsEditingCustomPalette: (editing: boolean) => void;
+  
+  // Actions - Mode
+  setMode: (mode: GeneratorMode) => void;
+  
+  // Actions - Custom settings
+  setLineDensity: (density: number) => void;
+  setLineCount: (count: number) => void;
+  setFocus: (focus: FocusType) => void;
+  setShowOutlines: (show: boolean) => void;
+  setOutlineColor: (color: string) => void;
+  setOutlineWidth: (width: number) => void;
+  setPadding: (padding: number) => void;
+  applyPreset: (preset: ZellijPreset) => void;
 }
 
-export const useZellijeStore = create<ZellijeState>((set) => ({
+export const useZellijeStore = create<ZellijeState>((set, get) => ({
+  // Common settings
   palette: PALETTES[0],
   shimmer: -1,
   seed: Date.now(),
   
+  // Custom palette
+  customPalette: DEFAULT_CUSTOM_PALETTE,
+  isEditingCustomPalette: false,
+  
+  // Generator mode
+  mode: 'random',
+  
+  // Custom mode settings (defaults to Classic preset)
+  lineDensity: 10,
+  lineCount: 25,
+  focus: 'None',
+  showOutlines: false,
+  outlineColor: '#000000',
+  outlineWidth: 1,
+  padding: 60,
+  
+  // Actions - Common
   setPalette: (palette) => set({ palette }),
   setShimmer: (shimmer) => set({ shimmer }),
   setSeed: (seed) => set({ seed }),
   regenerate: () => set({ seed: Date.now() }),
+  
+  // Actions - Custom Palette
+  setCustomPaletteColor: (index, color) => set((state) => {
+    const newColors = [...state.customPalette.colors];
+    newColors[index] = color;
+    const newCustomPalette = { ...state.customPalette, colors: newColors };
+    // If custom palette is currently active, update the active palette too
+    if (state.palette.isCustom) {
+      return { customPalette: newCustomPalette, palette: newCustomPalette };
+    }
+    return { customPalette: newCustomPalette };
+  }),
+  useCustomPalette: () => set((state) => ({ 
+    palette: state.customPalette,
+    isEditingCustomPalette: false 
+  })),
+  setIsEditingCustomPalette: (isEditingCustomPalette) => set({ isEditingCustomPalette }),
+  
+  // Actions - Mode
+  setMode: (mode) => set({ mode }),
+  
+  // Actions - Custom settings
+  setLineDensity: (lineDensity) => set({ lineDensity: Math.max(4, Math.min(25, lineDensity)) }),
+  setLineCount: (lineCount) => set({ lineCount: Math.max(5, Math.min(50, lineCount)) }),
+  setFocus: (focus) => set({ focus }),
+  setShowOutlines: (showOutlines) => set({ showOutlines }),
+  setOutlineColor: (outlineColor) => set({ outlineColor }),
+  setOutlineWidth: (outlineWidth) => set({ outlineWidth: Math.max(0.5, Math.min(5, outlineWidth)) }),
+  setPadding: (padding) => set({ padding: Math.max(20, Math.min(100, padding)) }),
+  applyPreset: (preset) => set({
+    lineDensity: preset.lineDensity,
+    lineCount: preset.lineCount,
+    focus: preset.focus
+  }),
 }));
+
+// Re-export presets for use in UI
+export { ZELLIJ_PRESETS } from '../zellij/zellijCustom';
+export type { ZellijPreset } from '../zellij/zellijCustom';
